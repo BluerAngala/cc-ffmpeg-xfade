@@ -26,6 +26,7 @@ OS="$(uname -s)"
 case "$OS" in
   Linux)  PLATFORM="linux" ;;
   Darwin) PLATFORM="macos" ;;
+  MINGW*|MSYS*|CYGWIN*) PLATFORM="windows" ;;
   *)      echo "❌ Unsupported platform: $OS"; exit 1 ;;
 esac
 echo "🖥  Platform: $PLATFORM"
@@ -106,6 +107,13 @@ COMMON_FLAGS=(
 
 if [ "$PLATFORM" = "macos" ]; then
   COMMON_FLAGS+=(--cc=clang)
+  export PKG_CONFIG_PATH="$(brew --prefix openssl)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+elif [ "$PLATFORM" = "windows" ]; then
+  MINGW_PREFIX="${MINGW_PREFIX:-/mingw64}"
+  COMMON_FLAGS+=(
+    --extra-cflags="-I${MINGW_PREFIX}/include"
+    --extra-ldflags="-L${MINGW_PREFIX}/lib"
+  )
 fi
 
 ./configure "${COMMON_FLAGS[@]}" 2>&1 | tail -5
@@ -122,7 +130,12 @@ make -j"$NPROC" ${ECFLAGS:+ECFLAGS=$ECFLAGS} 2>&1 | tail -3
 echo ""
 echo "📦 Installing..."
 make install 2>&1 | tail -1
-cp -f "$BUILD_DIR/install/bin/ffmpeg" "$CUSTOM_BIN"
+if [ "$PLATFORM" = "windows" ]; then
+  cp -f "$BUILD_DIR/install/bin/ffmpeg.exe" "$BUILD_DIR/ffmpeg-xfade.exe"
+  CUSTOM_BIN="$BUILD_DIR/ffmpeg-xfade.exe"
+else
+  cp -f "$BUILD_DIR/install/bin/ffmpeg" "$CUSTOM_BIN"
+fi
 
 cd ../..
 

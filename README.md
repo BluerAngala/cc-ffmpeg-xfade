@@ -20,7 +20,15 @@ Grab the latest binary from [Releases](../../releases).
 
 ```bash
 # Linux x86_64
-curl -sL https://github.com/YOUR_ORG/ffmpeg-xfade/releases/latest/download/ffmpeg-xfade-linux-x86_64.tar.gz | tar xz
+curl -sL https://github.com/BluerAngala/cc-ffmpeg-xfade/releases/latest/download/ffmpeg-xfade-linux-x86_64.tar.gz | tar xz
+
+# macOS ARM64 (Apple Silicon)
+curl -sL https://github.com/BluerAngala/cc-ffmpeg-xfade/releases/latest/download/ffmpeg-xfade-macos-arm64.tar.gz | tar xz
+
+# Windows x86_64
+curl -sLO https://github.com/BluerAngala/cc-ffmpeg-xfade/releases/latest/download/ffmpeg-xfade-windows-x86_64.zip
+unzip ffmpeg-xfade-windows-x86_64.zip
+
 ./ffmpeg-xfade -version
 ```
 
