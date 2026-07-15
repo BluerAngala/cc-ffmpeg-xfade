@@ -112,14 +112,16 @@ jobs:
         if: matrix.platform == 'macos'
         working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
         run: |
-          BREW_PREFIX=$(brew --prefix)
-          export PKG_CONFIG_PATH="${BREW_PREFIX}/opt/x264/lib/pkgconfig:${BREW_PREFIX}/opt/lame/lib/pkgconfig:${BREW_PREFIX}/opt/opus/lib/pkgconfig:${BREW_PREFIX}/opt/libvpx/lib/pkgconfig:${BREW_PREFIX}/opt/openssl/lib/pkgconfig:${BREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+          BREW=$(brew --prefix)
+          export PKG_CONFIG_PATH="${BREW}/opt/x264/lib/pkgconfig:${BREW}/opt/opus/lib/pkgconfig:${BREW}/opt/libvpx/lib/pkgconfig:${BREW}/opt/openssl/lib/pkgconfig:${BREW}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
           ./configure \
             --prefix="$(pwd)/../install" \
             --enable-gpl --enable-version3 \
             --enable-libx264 --enable-libmp3lame --enable-libopus --enable-libvpx \
             --enable-openssl \
             --cc=clang \
+            --extra-cflags="-I${BREW}/opt/lame/include" \
+            --extra-ldflags="-L${BREW}/opt/lame/lib" \
             --disable-doc --disable-debug \
             --disable-programs --enable-ffmpeg --disable-ffplay --disable-ffprobe
 
