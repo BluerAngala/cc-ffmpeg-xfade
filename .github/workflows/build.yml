@@ -1,0 +1,128 @@
+name: Build FFmpeg + xfade-easing
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      ffmpeg_version:
+        description: "FFmpeg version to build"
+        required: false
+        default: "8.1.2"
+
+permissions:
+  contents: write
+
+env:
+  FFMPEG_VERSION: ${{ inputs.ffmpeg_version || '8.1.2' }}
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: ffmpeg-xfade-linux-x86_64
+            platform: linux
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            build-essential nasm yasm pkg-config \
+            libx264-dev libmp3lame-dev libopus-dev libvpx-dev \
+            libfreetype-dev libfontconfig1-dev \
+            libssl-dev zlib1g-dev
+
+      - name: Download FFmpeg source
+        run: |
+          mkdir -p build
+          curl -sL "https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz" \
+            -o "build/ffmpeg-${FFMPEG_VERSION}.tar.xz"
+          tar -xf "build/ffmpeg-${FFMPEG_VERSION}.tar.xz" -C build
+
+      - name: Apply xfade-easing patch
+        run: |
+          FFMPEG_DIR="build/ffmpeg-${FFMPEG_VERSION}"
+          cp -f vendor/xfade-easing/src/vf_xfade.c     "$FFMPEG_DIR/libavfilter/vf_xfade.c"
+          cp -f vendor/xfade-easing/src/xfade-easing.h  "$FFMPEG_DIR/libavfilter/xfade-easing.h"
+          echo "Patch applied"
+
+      - name: Configure
+        working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
+        run: |
+          ./configure \
+            --prefix="$(pwd)/../install" \
+            --enable-gpl \
+            --enable-version3 \
+            --enable-libx264 \
+            --enable-libmp3lame \
+            --enable-libopus \
+            --enable-libvpx \
+            --enable-openssl \
+            --disable-doc \
+            --disable-debug \
+            --disable-programs \
+            --enable-ffmpeg \
+            --disable-ffplay \
+            --disable-ffprobe
+
+      - name: Build
+        working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
+        run: make -j$(nproc)
+
+      - name: Install
+        working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
+        run: make install
+
+      - name: Verify xfade-easing
+        run: |
+          BINARY="build/install/bin/ffmpeg"
+          echo "--- Version ---"
+          "$BINARY" -version | head -1
+          echo "--- xfade transitions ---"
+          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -E "gl_|curl|easing" || true
+          # Verify gl_InvertedPageCurl exists
+          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -q "gl_InvertedPageCurl" || {
+            echo "❌ gl_InvertedPageCurl not found in xfade filter"
+            exit 1
+          }
+          echo "✅ All xfade-easing transitions verified"
+
+      - name: Package artifact
+        run: |
+          mkdir -p release
+          cp build/install/bin/ffmpeg release/ffmpeg-xfade
+          chmod +x release/ffmpeg-xfade
+          # Tar with version info
+          cd release
+          tar -czf "${{ matrix.artifact }}.tar.gz" ffmpeg-xfade
+          echo "ARTIFACT=${{ matrix.artifact }}.tar.gz" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: release/${{ matrix.artifact }}.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/**/*.tar.gz
