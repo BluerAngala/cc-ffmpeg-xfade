@@ -55,7 +55,7 @@ install_deps_macos() {
     exit 1
   fi
   echo "📦 Installing dependencies via brew..."
-  brew install nasm x264 lame libopus vpx pkg-config 2>&1 | tail -1
+  brew install nasm x264 lame opus vpx pkg-config openssl 2>&1 | tail -1
 }
 
 if [ "${SKIP_DEPS:-0}" != "1" ]; then

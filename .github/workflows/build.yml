@@ -53,7 +53,7 @@ jobs:
       - name: Install dependencies (macOS)
         if: matrix.platform == 'macos'
         run: |
-          brew install nasm x264 lame libopus vpx pkg-config openssl
+          brew install nasm x264 lame opus vpx pkg-config openssl
 
       # ── Windows dependencies (MSYS2) ──
       - name: Setup MSYS2
