@@ -28,7 +28,7 @@ jobs:
           - os: macos-14
             artifact: ffmpeg-xfade-macos-arm64
             platform: macos
-          - os: windows-2025
+          - os: windows-latest
             artifact: ffmpeg-xfade-windows-x86_64
             platform: windows
 
@@ -53,7 +53,7 @@ jobs:
       - name: Install dependencies (macOS)
         if: matrix.platform == 'macos'
         run: |
-          brew install nasm x264 lame opus vpx pkg-config openssl
+          brew install nasm x264 lame opus libvpx pkg-config openssl
 
       # ── Windows dependencies (MSYS2) ──
       - name: Setup MSYS2
