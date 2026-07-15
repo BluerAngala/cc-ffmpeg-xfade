@@ -107,7 +107,8 @@ COMMON_FLAGS=(
 
 if [ "$PLATFORM" = "macos" ]; then
   COMMON_FLAGS+=(--cc=clang)
-  export PKG_CONFIG_PATH="$(brew --prefix openssl)/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  BREW_PREFIX=$(brew --prefix)
+  export PKG_CONFIG_PATH="${BREW_PREFIX}/opt/x264/lib/pkgconfig:${BREW_PREFIX}/opt/lame/lib/pkgconfig:${BREW_PREFIX}/opt/opus/lib/pkgconfig:${BREW_PREFIX}/opt/libvpx/lib/pkgconfig:${BREW_PREFIX}/opt/openssl/lib/pkgconfig:${BREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 elif [ "$PLATFORM" = "windows" ]; then
   MINGW_PREFIX="${MINGW_PREFIX:-/mingw64}"
   COMMON_FLAGS+=(

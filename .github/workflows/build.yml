@@ -112,7 +112,8 @@ jobs:
         if: matrix.platform == 'macos'
         working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
         run: |
-          export PKG_CONFIG_PATH="$(brew --prefix openssl)/lib/pkgconfig:$PKG_CONFIG_PATH"
+          BREW_PREFIX=$(brew --prefix)
+          export PKG_CONFIG_PATH="${BREW_PREFIX}/opt/x264/lib/pkgconfig:${BREW_PREFIX}/opt/lame/lib/pkgconfig:${BREW_PREFIX}/opt/opus/lib/pkgconfig:${BREW_PREFIX}/opt/libvpx/lib/pkgconfig:${BREW_PREFIX}/opt/openssl/lib/pkgconfig:${BREW_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
           ./configure \
             --prefix="$(pwd)/../install" \
             --enable-gpl --enable-version3 \
@@ -154,14 +155,20 @@ jobs:
         run: make -j$(nproc)
 
       # ── Install ──
-      - name: Install
-        shell: bash
+      - name: Install (Linux/macOS)
+        if: matrix.platform != 'windows'
+        working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
+        run: make install
+
+      - name: Install (Windows)
+        if: matrix.platform == 'windows'
+        shell: msys2 {0}
         working-directory: build/ffmpeg-${{ env.FFMPEG_VERSION }}
         run: make install
 
       # ── Verify xfade-easing ──
       - name: Verify xfade-easing
-        shell: bash
+        shell: ${{ matrix.platform == 'windows' && 'msys2 {0}' || 'bash' }}
         run: |
           if [ "${{ matrix.platform }}" = "windows" ]; then
             BINARY="build/install/bin/ffmpeg.exe"
@@ -179,18 +186,21 @@ jobs:
           echo "✅ xfade-easing patch verified"
 
       # ── Package artifact ──
-      - name: Package artifact
-        shell: bash
+      - name: Package artifact (Linux/macOS)
+        if: matrix.platform != 'windows'
         run: |
           mkdir -p release
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            cp build/install/bin/ffmpeg.exe release/ffmpeg-xfade.exe
-            cd release && 7z a "${{ matrix.artifact }}.zip" ffmpeg-xfade.exe
-          else
-            cp build/install/bin/ffmpeg release/ffmpeg-xfade
-            chmod +x release/ffmpeg-xfade
-            cd release && tar -czf "${{ matrix.artifact }}.tar.gz" ffmpeg-xfade
-          fi
+          cp build/install/bin/ffmpeg release/ffmpeg-xfade
+          chmod +x release/ffmpeg-xfade
+          cd release && tar -czf "${{ matrix.artifact }}.tar.gz" ffmpeg-xfade
+
+      - name: Package artifact (Windows)
+        if: matrix.platform == 'windows'
+        shell: msys2 {0}
+        run: |
+          mkdir -p release
+          cp build/install/bin/ffmpeg.exe release/ffmpeg-xfade.exe
+          cd release && 7z a "${{ matrix.artifact }}.zip" ffmpeg-xfade.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
