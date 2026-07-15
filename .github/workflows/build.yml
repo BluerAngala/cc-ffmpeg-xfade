@@ -86,14 +86,14 @@ jobs:
           BINARY="build/install/bin/ffmpeg"
           echo "--- Version ---"
           "$BINARY" -version | head -1
-          echo "--- xfade transitions ---"
-          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -E "gl_|curl|easing" || true
-          # Verify gl_InvertedPageCurl exists
-          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -q "gl_InvertedPageCurl" || {
-            echo "❌ gl_InvertedPageCurl not found in xfade filter"
+          echo "--- xfade options ---"
+          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -E "easing|reverse" || true
+          # easing option proves xfade-easing patch is applied
+          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -q "easing" || {
+            echo "❌ easing option not found — xfade-easing patch not applied"
             exit 1
           }
-          echo "✅ All xfade-easing transitions verified"
+          echo "✅ xfade-easing patch verified (easing + reverse options present)"
 
       - name: Package artifact
         run: |

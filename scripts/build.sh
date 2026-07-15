@@ -131,14 +131,14 @@ echo ""
 echo "═══════════════════════════════════════════════════"
 if [ -x "$CUSTOM_BIN" ]; then
   VERSION=$("$CUSTOM_BIN" -version 2>&1 | head -1)
-  HAS_XFADE=$("$CUSTOM_BIN" -hide_banner --help filter=xfade 2>&1 | grep -c "easing" || true)
+  HAS_EASING=$("$CUSTOM_BIN" -hide_banner --help filter=xfade 2>&1 | grep -c "easing" || true)
   echo "  ✅ Build complete!"
   echo "  Binary: $(pwd)/$CUSTOM_BIN"
   echo "  Version: $VERSION"
-  echo "  xfade-easing: $([ "$HAS_XFADE" -gt 0 ] && echo 'YES' || echo 'NO')"
+  echo "  xfade-easing: $([ "$HAS_EASING" -gt 0 ] && echo 'YES' || echo 'NO')"
   echo ""
   echo "  Quick test:"
-  echo "    $CUSTOM_BIN -hide_banner --help filter=xfade | grep -i curl"
+  echo "    $CUSTOM_BIN -hide_banner --help filter=xfade | grep easing"
 else
   echo "  ❌ Build failed — binary not found"
   exit 1
