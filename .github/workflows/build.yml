@@ -167,14 +167,25 @@ jobs:
         run: make install
 
       # ── Verify xfade-easing ──
-      - name: Verify xfade-easing
-        shell: ${{ matrix.platform == 'windows' && 'msys2 {0}' || 'bash' }}
+      - name: Verify xfade-easing (Linux/macOS)
+        if: matrix.platform != 'windows'
         run: |
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            BINARY="build/install/bin/ffmpeg.exe"
-          else
-            BINARY="build/install/bin/ffmpeg"
-          fi
+          BINARY="build/install/bin/ffmpeg"
+          echo "--- Version ---"
+          "$BINARY" -version | head -1
+          echo "--- xfade options ---"
+          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -E "easing|reverse" || true
+          "$BINARY" -hide_banner --help filter=xfade 2>&1 | grep -q "easing" || {
+            echo "❌ easing option not found — xfade-easing patch not applied"
+            exit 1
+          }
+          echo "✅ xfade-easing patch verified"
+
+      - name: Verify xfade-easing (Windows)
+        if: matrix.platform == 'windows'
+        shell: msys2 {0}
+        run: |
+          BINARY="build/install/bin/ffmpeg.exe"
           echo "--- Version ---"
           "$BINARY" -version | head -1
           echo "--- xfade options ---"
